@@ -1,9 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using Xunit.Abstractions;
 
 namespace IWebClientTest
 {
@@ -21,6 +23,12 @@ namespace IWebClientTest
             this.parser = parser ?? throw new ArgumentNullException("webClient");
         }
 
+        // For testing purposes
+        private int inclient = 0;
+        private int inparser = 0;
+
+        public ITestOutputHelper Output { get; internal set; }
+
         public async Task<IHtmlDocument> Get(string url)
         {
             string html = "";
@@ -29,20 +37,26 @@ namespace IWebClientTest
             await downloadSemaphore.WaitAsync();
             try
             {
+                //Interlocked.Increment(ref inclient);
                 html = await webClient.GetStringAsync(url);
             }
             finally
             {
+                //Interlocked.Decrement(ref inclient);
+                //Output.WriteLine(inclient.ToString());
                 downloadSemaphore.Release();
             }
 
             await parseSemaphore.WaitAsync();
             try
             {
+                //Interlocked.Increment(ref inparser);
                 result = parser.Parse(html);
             }
             finally
             {
+                //Interlocked.Decrement(ref inparser);
+                //Output.WriteLine(inclient.ToString());
                 parseSemaphore.Release();
             }
 
